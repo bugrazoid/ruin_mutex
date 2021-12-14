@@ -9,7 +9,9 @@ template<typename T>
 class Mutex {
 public:
   Mutex() = default;
-  Mutex(T&& data);
+  Mutex(T data);
+  template<typename ...Args>
+  Mutex(Args...args);
 
   T Clone();
 
@@ -20,15 +22,26 @@ public:
 
 private:
   std::mutex _mutex;
-  T _data;
+  using ConstrainedData = std::enable_if_t<
+                            !std::is_reference_v<T> &&
+                            !std::is_pointer_v<T>,
+                          T>;
+  ConstrainedData _data;
 };
 
 //--- Implementations ---
 
 template<typename T>
-Mutex<T>::Mutex(T&& data)
-    : _data(std::forward<T>(data)) {
+Mutex<T>::Mutex(T data)
+    : _data(data) {
 }
+
+template<typename T>
+template<typename ...Args>
+Mutex<T>::Mutex(Args ...args)
+    : _data(args...) {
+}
+
 
 template<typename T>
 T Mutex<T>::Clone() {

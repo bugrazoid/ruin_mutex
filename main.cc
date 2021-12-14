@@ -7,6 +7,7 @@
 #include <chrono>
 
 #include "ruin_mutex.h"
+#include "tests.h"
 
 using namespace std;
 
@@ -58,5 +59,6 @@ int main() {
   cout << "Done: " << result.count << ", " << result.message << endl;
   assert(result.count == a*b);
 
+  test::run_all();
   return 0;
 }
