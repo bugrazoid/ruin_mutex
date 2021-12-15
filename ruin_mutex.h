@@ -3,22 +3,91 @@
 #include <mutex>
 #include <type_traits>
 
+/// ruin is rust inspired
 namespace ruin {
 
+/** Mutex is inspired by rust mutex.
+ *
+ * Main features of this implementation:
+ * 1. Mutex owns data that it protects
+ * 2. Implementing access to data through functors
+ * This allows the programmer to clearly understand what data are protected and does not make it
+ * difficult to change them without blocking.
+ */
 template<typename T>
 class Mutex {
 public:
+  /// Default constructor
   Mutex() = default;
+
+  /// Construct from existed data
   Mutex(T data);
+
+  /// Construct data emplace
   template<typename ...Args>
   Mutex(Args...args);
 
+  /// Clone data
   T Clone();
 
+  /** Read data with functor
+   *
+   * @param f - Functor used to read data with the signature f(const T&)
+   *
+   * To read the data convenient to use the lambda with the closure. The closure you need to
+   * transfer a reference to the destination variable.
+   *
+   * @warning
+   * Do not use pointers to obtain addresses for secure data, it may result in data racing.
+   *
+   * ### Example
+   * ~~~
+   *  struct Data {
+   *    int count{};
+   *    std::string message;
+   *  };
+   *
+   *  ruin::Mutex<Data> m;
+   *
+   *  int main() {
+   *    std::string dst;
+   *    m.Read([&dst](const Data& data) {
+   *      dst = data.message;
+   *    });
+   *  };
+   * ~~~
+   */
   template<typename F>
-  void Read(F);
+  void Read(F f);
+
+  /** Write data with functor
+   *
+   * @param f - Functor used to write data with the signature f(T&)
+   *
+   * To write the data convenient to use the lambda with the closure.
+   *
+   * @warning
+   * Do not use pointers to obtain addresses for secure data, it may result in data racing.
+   *
+   * ### Example
+   * ~~~
+   *  struct Data {
+   *    int count{};
+   *    std::string message;
+   *  };
+   *
+   *  ruin::Mutex<Data> m;
+   *
+   *  int main() {
+   *    std::string src;
+   *    m.Write([&src](Data& data) {
+   *      data.message = src;
+   *    });
+   *  };
+   * ~~~
+   */
   template<typename F>
-  void Write(F);
+  void Write(F f);
 
 private:
   std::mutex _mutex;
@@ -33,7 +102,7 @@ private:
 
 template<typename T>
 Mutex<T>::Mutex(T data)
-    : _data(data) {
+    : _data(std::move(data)) {
 }
 
 template<typename T>
